@@ -37,7 +37,7 @@ class Expression:
     def __init__(self, operator, priority, *values):
         self.operator = operator
         self.priority = priority
-        self.values = values
+        self.values = list(values)
 
     @property
     def value(self): return self.values[0]
@@ -64,9 +64,15 @@ class Positive(Expression):
     def __str__(self) -> str:
         return str(self.value)
 
+    def evaluate(self):
+        return self.value.evaluate() if isinstance(self.value, Expression) else self.value
+
 class Negative(SingleValueExpression):
     def __init__(self, value):
         super().__init__('-', __class__.PRIORITY_SIGN, autoexpr(value))
+
+    def evaluate(self):
+        return -self.values[0].evaluate()
 
 class Symbol(Expression):
     def __init__(self, value):
@@ -83,19 +89,67 @@ class Mul(TwoSideExpression):
     def __init__(self, a, b):
         super().__init__('*', __class__.PRIORITY_MULTIPLICATION, autoexpr(a), autoexpr(b))
 
+    def evaluate(self):
+        return self.values[0].evaluate() * self.values[1].evaluate()
+
 class Div(TwoSideExpression):
     def __init__(self, a, b):
         super().__init__('/', __class__.PRIORITY_MULTIPLICATION, autoexpr(a), autoexpr(b))
+
+    def evaluate(self):
+        return self.values[0].evaluate() / self.values[1].evaluate()
 
 class Add(TwoSideExpression):
     def __init__(self, a, b):
         super().__init__('+', __class__.PRIORITY_ADD, autoexpr(a), autoexpr(b))
 
+    def evaluate(self):
+        return self.values[0].evaluate() + self.values[1].evaluate()
+
 class Sub(TwoSideExpression):
     def __init__(self, a, b):
         super().__init__('-', __class__.PRIORITY_ADD, autoexpr(a), autoexpr(b))
+
+    def evaluate(self):
+        return self.values[0].evaluate() - self.values[1].evaluate()
+
+class Equation:
+    def __init__(self, left, right) -> None:
+        self.left = left
+        self.right = right
+
+    def __str__(self) -> str:
+        return str(self.left) + '=' + str(self.right)
 
 def autoexpr(v):
     if isinstance(v, Expression): return v
     elif isinstance(v, str): return Symbol(v)
     else: return Positive(v) if v >= 0 else Negative(-v)
+
+def collect_values(expr):
+    def collect(root, values):
+        if isinstance(root, Expression):
+            for child in root.values:
+                collect(child, values)
+        else:
+            values.append(root)
+    values = []
+    collect(expr, values)
+    return values
+
+def replace_values(expr, values):
+    def replace(root, values):
+        for i,child in enumerate(root.values):
+            if isinstance(child, Expression):
+                replace(child, values)
+            else:
+                root.values[i] = values.pop(0)
+    replace(expr, values[:])
+
+def replace_one_symbol(expr):
+    values = collect_values(expr)
+    symbol = np.random.choice(['a', 'b', 'c', 'd', 'x', 'y'])
+    idx = np.random.choice(len(values))
+    values[idx] = Symbol(symbol)
+    replace_values(expr, values)
+    return expr
