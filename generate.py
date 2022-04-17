@@ -1,4 +1,3 @@
-from torch import maximum
 import utils
 import numpy as np
 
@@ -70,6 +69,12 @@ def div_factor(num_factors):
     generator = utils.Generator(prime_factors=num_factors, signed=False)
     return utils.Div(generator.generate_factored(), generator.generate_factored())
 
+def gcd_and_lcm(num_factors):
+    generator = utils.Generator(prime_factors=num_factors, signed=False)
+    a = generator.generate_factored()
+    b = generator.generate_factored()
+    return utils.Gcd(a, b) if np.random.ranf() < 0.5 else utils.Lcm(a, b)
+
 def symbol_mul_div(level):
     generator = utils.Generator(maximum=_maximum_on_level(level), signed=True)
     a = generator.generate_ranged()
@@ -88,8 +93,8 @@ def simple_rational(num_factors):
 
 def symbol_rational(num_factors):
     generator = utils.Generator(prime_factors=num_factors, signed=True)
-    a = generator.generate_ranged()
-    b = generator.generate_ranged(nonzero=True)
+    a = generator.generate_factored()
+    b = generator.generate_factored()
     left = simple_rational(num_factors)
     right = utils.Div(a, b)
     utils.replace_one_symbol(left)
@@ -102,5 +107,5 @@ def _maximum_on_level(level):
     return maximum
 
 if __name__ == '__main__':
-    pg = utils.ProblemGenerator(symbol_rational, 2)
+    pg = utils.ProblemGenerator(simple_rational, 2)
     pg.generate()

@@ -113,6 +113,28 @@ class Sub(TwoSideExpression):
     def evaluate(self):
         return self.values[0].evaluate() - self.values[1].evaluate()
 
+class Gcd(Expression):
+    def __init__(self, *values):
+        super().__init__('gcd', __class__.PRIORITY_FUNCTION, *[autoexpr(x) for x in values])
+
+    def __str__(self):
+        return f'({",".join([str(x) for x in self.values])})'
+
+    def evaluate(self):
+        out = 1
+        for v in self.values: out = np.gcd(out, v.evaluate())
+
+class Lcm(Expression):
+    def __init__(self, *values):
+        super().__init__('gcd', __class__.PRIORITY_FUNCTION, *[autoexpr(x) for x in values])
+
+    def __str__(self):
+        return f'[{",".join([str(x) for x in self.values])}]'
+        
+    def evaluate(self):
+        out = 1
+        for v in self.values: out = np.lcm(out, v.evaluate())
+
 class Equation:
     def __init__(self, left, right) -> None:
         self.left = left
