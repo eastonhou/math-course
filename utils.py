@@ -24,8 +24,9 @@ class ProblemGenerator:
         self.kwargs = kwargs
         self.count = count
 
-    def generate(self):
+    def generate(self, deliminator=None):
         for _ in range(self.count):
+            if deliminator is not None: print(deliminator)
             print(self.method(*self.args, **self.kwargs))
 
 class Expression:
@@ -137,11 +138,18 @@ class Lcm(Expression):
 
 class Equation:
     def __init__(self, left, right) -> None:
-        self.left = left
-        self.right = right
+        self.left = autoexpr(left)
+        self.right = autoexpr(right)
 
     def __str__(self) -> str:
         return str(self.left) + '=' + str(self.right)
+
+class EquationSet:
+    def __init__(self, equations):
+        self.equations = equations
+
+    def __str__(self):
+        return '\n'.join([str(x) for x in self.equations])
 
 def autoexpr(v):
     if isinstance(v, Expression): return v
