@@ -60,7 +60,7 @@ class TwoSideExpression(Expression):
 
 class Positive(Expression):
     def __init__(self, value):
-        super().__init__('', __class__.PRIORITY_NUMBER, value)
+        super().__init__('', getattr(value, 'priority', __class__.PRIORITY_NUMBER), value)
 
     def __str__(self) -> str:
         return str(self.value)
@@ -150,6 +150,14 @@ class EquationSet:
 
     def __str__(self):
         return '\n'.join([str(x) for x in self.equations])
+
+class Compare:
+    def __init__(self, left, right) -> None:
+        self.left = autoexpr(left)
+        self.right = autoexpr(right)
+
+    def __str__(self) -> str:
+        return str(self.left) + ' ◯  ' + str(self.right)
 
 def autoexpr(v):
     if isinstance(v, Expression): return v

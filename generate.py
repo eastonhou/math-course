@@ -100,14 +100,24 @@ def rational_symbol_mul_div2(level):
     right = operand()
     return utils.Equation(left, right)
 
-def simple_rational(num_factors, num_operators=2):
+def simple_rational(num_factors, num_operators=2, operations=(utils.Add, utils.Sub)):
     generator = utils.Generator(prime_factors=num_factors, signed=True)
     def factors(): return [generator.generate_factored() for _ in range(2)]
     def operand(): return np.random.choice([utils.Positive, utils.Negative])(utils.Div(*factors()))
-    def operator(): return np.random.choice([utils.Add, utils.Sub])
+    def operator(): return np.random.choice(operations)
     root = operand()
     for _ in range(1, num_operators): root = operator()(root, operand())
     return root
+
+def rational_comparison(level):
+    def _method0(num, shift): return utils.Div(num - shift, num), utils.Div(num, num + shift)
+    def _method1(num, shift): return utils.Div(1, num), utils.Div(1, num + shift)
+    generator = utils.Generator(maximum=_maximum_on_level(level))
+    num = abs(generator.generate_ranged(True))
+    a, b = np.random.choice([_method0, _method1])(num, np.random.randint(1, 4))
+    if np.random.ranf() < 0.5: a, b = b, a
+    if np.random.ranf() < 0.5: a, b = utils.Negative(a), utils.Negative(b)
+    return utils.Compare(a, b)
 
 def symbol_rational(num_factors, num_operators=2):
     generator = utils.Generator(prime_factors=num_factors, signed=True)
@@ -156,5 +166,5 @@ def _generate_rational(level):
     return utils.Div(generator.generate_factored(), generator.generate_factored())
 
 if __name__ == '__main__':
-    pg = utils.ProblemGenerator(rational_symbol_mul_div2, 1)
-    pg.generate('-------------------')
+    pg = utils.ProblemGenerator(rational_comparison, 1, count=30)
+    pg.generate()
