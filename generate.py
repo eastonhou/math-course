@@ -84,13 +84,13 @@ def symbol_mul_div(level):
     utils.replace_one_symbol(left)
     return utils.Equation(left, right)
 
-def rational_symbol_mul_div(level):
+def simple_rational_symbol_equation(level):
     generator = utils.Generator(prime_factors=level, signed=True)
     left = _generate_symbol_with_cofficent(np.random.choice(list('abcxyz')), level, np.random.ranf() < 0.5)
     right = _generate_rational(level) if np.random.ranf() < 0.5 else generator.generate_factored()
     return utils.Equation(left, right)
 
-def rational_symbol_mul_div2(level):
+def rational_symbol_equation(level):
     def operator(): return np.random.choice([utils.Add, utils.Sub])
     def operand(): return _generate_rational(level) if np.random.ranf() < 0.5 else generator.generate_factored()
     generator = utils.Generator(prime_factors=level, signed=True)
@@ -128,12 +128,26 @@ def symbol_rational(num_factors, num_operators=2):
     utils.replace_one_symbol(left)
     return utils.Equation(left, right)
 
-def linear_equations(num_variables, level):
-    symbol_sets = np.random.choice(['abcdef', 'uvwxyz'])
-    symbols = symbol_sets[:num_variables]
+def integral_linear_equations(num_variables, level):
+    vmax = _maximum_on_level(level)
+    symbol_set = np.random.choice(['abcdef', 'uvwxyz'])
+    generator = utils.Generator(maximum=vmax)
+    variables = [generator.generate_ranged() for _ in range(num_variables)]
+    while True:
+        mat = np.random.randint(-vmax, vmax + 1, size=(num_variables, num_variables))
+        if np.linalg.det(mat) != 0: break
+    ys = mat @ variables
+    equations = []
+    for coffs, y in zip(mat, ys):
+        equations.append(_make_linear_equation(symbol_set[:num_variables], coffs, y))
+    return utils.EquationSet(equations)
+
+def linear_equations(num_variables, level, rational):
+    symbol_set = np.random.choice(['abcdef', 'uvwxyz'])
+    symbols = symbol_set[:num_variables]
     equations = []
     for _ in range(num_variables):
-        equation = _generate_linear_equation(symbols, level)
+        equation = _generate_linear_equation(symbols, level, rational)
         equations.append(equation)
     return utils.EquationSet(equations)
 
@@ -143,7 +157,7 @@ def _maximum_on_level(level):
     elif level == 2: maximum = 99999
     return maximum
 
-def _generate_symbol_with_cofficent(symbol, level, rational=True):
+def _generate_symbol_with_cofficent(symbol, level, rational):
     if rational:
         cofficient = _generate_rational(level)
     else:
@@ -151,20 +165,50 @@ def _generate_symbol_with_cofficent(symbol, level, rational=True):
         cofficient = generator.generate_factored()
     return utils.Mul(cofficient, symbol)
 
-def _generate_linear_equation(symbols, level):
+def _generate_linear_equation(symbols, level, rational):
     generator = utils.Generator(prime_factors=level, signed=True)
     left = None
     for x in symbols:
-        token = _generate_symbol_with_cofficent(x, level)
+        token = _generate_symbol_with_cofficent(x, level, rational)
         if left is None: left = token
         else: left = np.random.choice([utils.Add, utils.Sub])(left, token)
     right = generator.generate_factored()
     return utils.Equation(left, right)
 
+def _make_linear_equation(symbols, coffcients, value):
+    left = None
+    for c, x in zip(coffcients, symbols):
+        token = utils.Mul(c, x)
+        if left is None: left = token
+        else: left = utils.Add(left, token)
+    return utils.Equation(left, value)
+
 def _generate_rational(level):
     generator = utils.Generator(prime_factors=level, signed=True)
     return utils.Div(generator.generate_factored(), generator.generate_factored())
 
+def generate_mix():
+    np.random.seed(5001)
+    print('一、混合加减乘除')
+    utils.ProblemGenerator(mix_asmd, count=2).generate()
+    print('二、带未知数加减')
+    utils.ProblemGenerator(symbol_add_sub2, 2, count=4).generate()
+    print('三、分解素因子')
+    utils.ProblemGenerator(factor, 3, count=4).generate()
+    print('四、化简分数')
+    utils.ProblemGenerator(div_factor, 3, count=4).generate()
+    print('五、最小公约数和最大公倍数')
+    utils.ProblemGenerator(gcd_and_lcm, 3, count=4).generate()
+    print('六、有理数加减乘除')
+    utils.ProblemGenerator(simple_rational, 2, 3, (utils.Add, utils.Sub, utils.Mul, utils.Div), count=4).generate()
+    print('七、求未知数')
+    utils.ProblemGenerator(simple_rational_symbol_equation, 2, count=2).generate()
+    utils.ProblemGenerator(rational_symbol_equation, 1, count=2).generate()
+    utils.ProblemGenerator(symbol_rational, 2, 2, count=2).generate()
+    print('八、有理数比大小')
+    utils.ProblemGenerator(rational_comparison, 2, count=2).generate()
+    print('九、解方程组')
+    utils.ProblemGenerator(integral_linear_equations, 2, 0, count=2).generate('--------------')
+    
 if __name__ == '__main__':
-    pg = utils.ProblemGenerator(rational_comparison, 1, count=30)
-    pg.generate()
+    generate_mix()
